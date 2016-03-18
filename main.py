@@ -17,11 +17,16 @@ with SSHTunnelForwarder(('murphy.wot.eecs.northwestern.edu', 22), ssh_password='
                         remote_bind_address=('127.0.0.1', 3306)) as server:
     con = MySQLdb.connect(host='127.0.0.1', port=server.local_bind_port, user='mhealth', passwd='mhealth',
                           db='mhealthplay')
+    useless = pandas.read_sql_query('select * from SmokingRing; delete from SmokingRing;', con=con)
+    time.sleep(10)
     try:
         while True:
-            sk = pandas.read_sql_query('select * from SmokingRing where ID > 29600;', con=con)
+            sk = pandas.read_sql_query('select * from SmokingRing;', con=con)
             # process the raw signals
             dat = dpro.process(sk)
+            count = len(sk)/48
+            query = 'select * from SmokingRing; delete from SmokingRing ORDER BY ID ASC limit %s;' % count
+            heihei = pandas.read_sql_query(query, con=con)
             # remove all rows with null values
             dat = dat.dropna()
             # load classifier options:
@@ -45,7 +50,7 @@ with SSHTunnelForwarder(('murphy.wot.eecs.northwestern.edu', 22), ssh_password='
                 break
             now = datetime.datetime.now()
             print now.strftime("%Y-%m-%d %H:%M:%S"), " Not smoking."
-            time.sleep(3)
+            time.sleep(5)
     except KeyboardInterrupt:
         pass
 
